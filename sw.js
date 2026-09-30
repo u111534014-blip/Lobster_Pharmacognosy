@@ -2,7 +2,7 @@
  * 離線快取。更新 app 檔案後，把 VERSION 加 1，使用者下次打開就會拿到新版。
  * 新增模組檔案時，記得也加進 FILES。
  */
-var VERSION = 'v1';
+var VERSION = 'v2';
 var CACHE = 'longxia-yaozhi-' + VERSION;
 var FILES = [
   './',
