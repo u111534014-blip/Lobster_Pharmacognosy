@@ -84,6 +84,7 @@ window.App = window.App || {};
     var text = b.syncing ? '正在從試算表更新題庫…'
       : b.error ? b.error
       : b.updatedAt ? '題庫更新於 ' + new Date(b.updatedAt).toLocaleString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+        + '，' + App.data.families.length + ' 科，' + Object.keys(App.data.traits || {}).length + ' 科有特徵'
       : '題庫：內建';
     return h('p', { class: 'bank-status' + (b.error ? ' is-error' : ''), id: 'bank-status' }, [
       h('span', { text: text }),
