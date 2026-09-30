@@ -389,9 +389,9 @@
       refresh();
       return enough()
         ? fams.length + ' 科、' + Object.keys(traits).length + ' 個特徵，看特徵選科名或看科名選特徵'
-        : '看特徵選科名或看科名選特徵（目前 ' + fams.length + ' 科有特徵，滿 ' + MIN_FAMS + ' 科就能出題）';
+        : '目前 ' + fams.length + ' 科有特徵，在試算表填滿 ' + MIN_FAMS + ' 科就能開始練習';
     },
-    status: 'ready',
+    status: function () { refresh(); return enough() ? 'ready' : 'waiting'; },
     render: function (el) { refresh(); renderSetup(el); },
     summary: function () {
       var s = load(), t = totals(s);

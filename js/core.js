@@ -28,9 +28,12 @@ window.App = window.App || {};
     App.currentView = id;
     if (id === 'home') { App.renderHome(root); return; }
     var mod = App.getModule(id);
-    if (mod && mod.status === 'ready') mod.render(root, params || {});
+    if (mod && statusOf(mod) === 'ready') mod.render(root, params || {});
     else App.renderHome(root);
   };
+
+  // status 可以是字串或函式（例如題目夠了才 'ready'）
+  function statusOf(m) { return typeof m.status === 'function' ? m.status() : m.status; }
 
   // 小工具：建立元素
   App.h = function (tag, attrs, children) {
@@ -110,13 +113,13 @@ window.App = window.App || {};
     ]));
     var grid = h('div', { class: 'module-grid' });
     modules.forEach(function (m) {
-      var ready = m.status === 'ready';
+      var st = statusOf(m), ready = st === 'ready';
       var card = h(ready ? 'button' : 'div', {
         class: 'module-card' + (ready ? '' : ' is-soon'),
         type: ready ? 'button' : null,
         onclick: ready ? function () { App.go(m.id); } : null
       }, [
-        h('span', { class: 'module-tag', text: ready ? '可以練習' : '即將推出' }),
+        h('span', { class: 'module-tag', text: ready ? '可以練習' : st === 'waiting' ? '準備中' : '即將推出' }),
         h('span', { class: 'module-title', text: m.title }),
         h('span', { class: 'module-sub', text: typeof m.subtitle === 'function' ? m.subtitle() : m.subtitle }),
         ready && m.summary ? m.summary() : null
