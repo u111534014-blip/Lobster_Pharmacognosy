@@ -173,6 +173,8 @@ button.module-card:hover { border-color: var(--accent); transform: translateY(-1
   overflow-wrap: anywhere;
 }
 .specimen-name.latin { font-family: var(--font-latin); font-weight: 600; letter-spacing: .01em; }
+.specimen-name.is-trait { font-size: 1.5rem; line-height: 1.4; }
+.specimen-sub { margin: -4px 0 10px; color: var(--muted); }
 .specimen-ask { margin: 0; padding-top: 8px; border-top: 1px dashed var(--line); color: var(--muted); font-size: .9rem; }
 
 .options { display: grid; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); gap: 8px; }

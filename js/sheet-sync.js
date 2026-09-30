@@ -3,7 +3,7 @@
  * 1. 先用上次同步存下來的題庫（沒網路也能用），沒有的話用內建的 families.js
  * 2. 每次打開 App 在背景抓最新的試算表，成功就存起來並更新畫面
  * 「科名」工作表欄位：中文科名、英文科名1、英文科名2（可再加英文科名3…）
- * 「植物特徵」工作表欄位：中文科名、特徵（一個特徵一列）
+ * 「植物特徵」工作表欄位：中文科名、特徵、備註（一個特徵一列；備註可空白，答題後會顯示）
  */
 (function () {
   var CACHE_KEY = 'bank';
@@ -76,13 +76,13 @@
 
   function toTraits(rows) {
     var header = rows[0] || [];
-    var zhCol = col(header, '中文科名'), tCol = col(header, '特徵');
+    var zhCol = col(header, '中文科名'), tCol = col(header, '特徵'), nCol = col(header, '備註');
     if (zhCol < 0 || tCol < 0) return {};
     var out = {};
     rows.slice(1).forEach(function (r) {
       var zh = r[zhCol], t = r[tCol];
       if (!zh || !t) return;
-      (out[zh] = out[zh] || []).push(t);
+      (out[zh] = out[zh] || []).push({ t: t, note: nCol >= 0 ? r[nCol] || '' : '' });
     });
     return out;
   }
