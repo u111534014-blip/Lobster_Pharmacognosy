@@ -1,8 +1,8 @@
 /*
- * 離線快取。更新 app 檔案後，把 VERSION 加 1，使用者下次打開就會拿到新版。
- * 新增模組檔案時，記得也加進 FILES。
+ * 離線快取。有網路時一律載入最新檔案，沒網路才用快取。
+ * 新增或刪除檔案時，更新 FILES 並把 VERSION 加 1。
  */
-var VERSION = 'v2';
+var VERSION = 'v3';
 var CACHE = 'longxia-yaozhi-' + VERSION;
 var FILES = [
   './',
@@ -35,14 +35,27 @@ self.addEventListener('fetch', function (e) {
   var url = new URL(e.request.url);
   var isFont = /fonts\.(googleapis|gstatic)\.com$/.test(url.hostname);
   if (url.origin !== location.origin && !isFont) return;
-  // 先用快取（離線可用），同時在背景更新
-  e.respondWith(caches.open(CACHE).then(function (c) {
-    return c.match(e.request, { ignoreSearch: true }).then(function (hit) {
-      var net = fetch(e.request).then(function (res) {
-        if (res && (res.ok || res.type === 'opaque')) c.put(e.request, res.clone());
-        return res;
-      }).catch(function () { return hit; });
-      return hit || net;
-    });
-  }));
+
+  if (isFont) {
+    // 字型很少變：先用快取
+    e.respondWith(caches.open(CACHE).then(function (c) {
+      return c.match(e.request).then(function (hit) {
+        return hit || fetch(e.request).then(function (res) { c.put(e.request, res.clone()); return res; });
+      });
+    }));
+    return;
+  }
+
+  // app 檔案：有網路就拿最新版（並更新快取），沒網路才用快取
+  e.respondWith(
+    fetch(e.request, { cache: 'no-cache' }).then(function (res) {
+      if (res && res.ok) {
+        var copy = res.clone();
+        caches.open(CACHE).then(function (c) { c.put(e.request, copy); });
+      }
+      return res;
+    }).catch(function () {
+      return caches.match(e.request, { ignoreSearch: true });
+    })
+  );
 });
