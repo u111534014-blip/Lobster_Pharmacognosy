@@ -1,13 +1,13 @@
 # 龍蝦藥植（藥用植物學讀書工具）
 
-直接用瀏覽器打開 `index.html` 就能使用，不需要安裝。答題紀錄存在該瀏覽器的 localStorage。
+直接用瀏覽器打開 `index.html` 就能使用，不需要安裝。答題記錄存在該瀏覽器的 localStorage。
 
 ## 檔案結構
 - `index.html`：頁面入口，依序載入資料、核心與功能模組
 - `css/style.css`：樣式（淺色／深色主題）
 - `js/data/families.js`：科名資料（來自 科名對照.xlsx，56 科），要增修科名改這裡
 - `js/core.js`：模組註冊、畫面切換、本機儲存
-- `js/modules/family-quiz.js`：科名配對（自訂 5–20 題、錯題本、錯題複習、答題紀錄）
+- `js/modules/family-quiz.js`：科名配對（自訂 5–20 題、錯題本、錯題複習、答題記錄）
 - `js/modules/family-traits.js`：預留的「科名與植物特徵」
 - `icons/icon.svg`：暫用 icon，換成正式 icon 後改 index.html 的 icon 連結
 

@@ -80,7 +80,7 @@ window.App = window.App || {};
   App.renderHome = function (el) {
     var h = App.h;
     el.appendChild(h('section', { class: 'home-intro' }, [
-      h('p', { class: 'lede', text: '選一個練習開始。答題紀錄會留在這台裝置的瀏覽器裡。' })
+      h('p', { class: 'lede', text: '選一個練習開始。答題記錄會留在這台裝置的瀏覽器裡。' })
     ]));
     var grid = h('div', { class: 'module-grid' });
     modules.forEach(function (m) {

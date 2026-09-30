@@ -2,7 +2,7 @@
  * 功能模組：科名配對
  * 題幹中文 → 選英文科名（有兩個英文名就要全選，複選）
  * 題幹英文 → 選中文科名（單選）
- * 紀錄存在 App.store 的 'familyQuiz'：
+ * 記錄存在 App.store 的 'familyQuiz'：
  *   stats  { 科id: { c: 答對次數, w: 答錯次數 } }
  *   wrong  { 科id: { n: 累計答錯, t: 最近答錯時間 } }   ← 錯題本
  *   sessions [ { t, mode, total, correct } ]          ← 最近 50 次
@@ -156,7 +156,7 @@
       stat('累計作答', t.n + ' 題'),
       stat('正確率', pct(t.c, t.n)),
       stat('錯題本', wIds.length + ' 科'),
-      h('button', { type: 'button', class: 'link-btn', text: '查看紀錄', onclick: function () { renderRecords(clear(el)); } })
+      h('button', { type: 'button', class: 'link-btn', text: '查看記錄', onclick: function () { renderRecords(clear(el)); } })
     ]));
   }
 
@@ -352,12 +352,12 @@
     }));
   }
 
-  // ---------- 畫面：紀錄 ----------
+  // ---------- 畫面：記錄 ----------
   function renderRecords(el) {
     var s = load();
     var t = totals(s);
     var wIds = wrongIds(s);
-    el.appendChild(topbar('答題紀錄', h('button', {
+    el.appendChild(topbar('答題記錄', h('button', {
       type: 'button', class: 'link-btn', text: '回設定', onclick: function () { renderSetup(clear(el)); }
     })));
 
@@ -414,12 +414,12 @@
         }))
       ])]));
     } else {
-      el.appendChild(h('p', { class: 'empty', text: '還沒有測驗紀錄。' }));
+      el.appendChild(h('p', { class: 'empty', text: '還沒有測驗記錄。' }));
     }
 
-    // 清除紀錄（頁面內確認，不用 confirm 對話框）
+    // 清除記錄（頁面內確認，不用 confirm 對話框）
     var confirmRow = h('div', { class: 'danger-confirm', hidden: true }, [
-      h('span', { text: '確定要清除所有答題紀錄與錯題本嗎？此動作無法復原。' }),
+      h('span', { text: '確定要清除所有答題記錄與錯題本嗎？此動作無法復原。' }),
       h('button', { type: 'button', class: 'btn danger', text: '清除', onclick: function () {
         var st = load();
         App.store.set(KEY, { settings: st.settings });
@@ -427,7 +427,7 @@
       } }),
       h('button', { type: 'button', class: 'btn ghost', text: '取消', onclick: function () { confirmRow.hidden = true; resetBtn.hidden = false; } })
     ]);
-    var resetBtn = h('button', { type: 'button', class: 'link-btn danger-link', text: '清除所有紀錄', onclick: function () { confirmRow.hidden = false; resetBtn.hidden = true; } });
+    var resetBtn = h('button', { type: 'button', class: 'link-btn danger-link', text: '清除所有記錄', onclick: function () { confirmRow.hidden = false; resetBtn.hidden = true; } });
     el.appendChild(h('div', { class: 'reset-area' }, [resetBtn, confirmRow]));
   }
 
