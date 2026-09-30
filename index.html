@@ -26,16 +26,19 @@
 
 <main id="view" class="view"></main>
 
-<!-- 資料 -->
+<!-- 設定與資料 -->
+<script src="js/config.js"></script>
 <script src="js/data/families.js"></script>
 <!-- 核心 -->
 <script src="js/core.js"></script>
+<script src="js/sheet-sync.js"></script>
 <!-- 功能模組（首頁卡片依此順序排列；新增功能就在這裡多加一行） -->
 <script src="js/modules/family-quiz.js"></script>
 <script src="js/modules/family-traits.js"></script>
 <script>
   document.getElementById('brand-home').addEventListener('click', function () { App.go('home'); });
   App.go('home');
+  App.syncBank();
   // 離線快取：只在 https 或 localhost 下啟用（直接雙擊開檔案時不會啟用）
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
     window.addEventListener('load', function () {

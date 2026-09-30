@@ -12,11 +12,15 @@
   var h = App.h;
   var KEY = 'familyQuiz';
   var MIN = 5, MAX = 20;
-  var families = App.data.families.map(function (f) {
-    return { id: f.en[0], zh: f.zh, en: f.en.slice() };
-  });
-  var byId = {};
-  families.forEach(function (f) { byId[f.id] = f; });
+  // 題庫可能在 App 開著時從試算表更新，所以每次用到前重新整理
+  var families = [], byId = {};
+  function refresh() {
+    families = App.data.families.filter(function (f) { return f.zh && f.en && f.en.length; })
+      .map(function (f) { return { id: f.en[0], zh: f.zh, en: f.en.slice() }; });
+    byId = {};
+    families.forEach(function (f) { byId[f.id] = f; });
+  }
+  refresh();
 
   function load() {
     var s = App.store.get(KEY, null) || {};
@@ -24,14 +28,13 @@
     s.wrong = s.wrong || {};
     s.sessions = s.sessions || [];
     s.settings = s.settings || { count: 10, dir: 'mix' };
-    // 資料檔若刪掉某科，錯題本裡對應的就略過
-    Object.keys(s.wrong).forEach(function (id) { if (!byId[id]) delete s.wrong[id]; });
     return s;
   }
   function save(s) { App.store.set(KEY, s); }
 
   function wrongIds(s) {
-    return Object.keys(s.wrong).sort(function (a, b) { return s.wrong[b].t - s.wrong[a].t; });
+    // 題庫裡已刪掉的科先略過（不刪除記錄，科名加回來時會再出現）
+    return Object.keys(s.wrong).filter(function (id) { return byId[id]; }).sort(function (a, b) { return s.wrong[b].t - s.wrong[a].t; });
   }
 
   function totals(s) {
@@ -440,9 +443,9 @@
   App.registerModule({
     id: 'family-quiz',
     title: '科名配對',
-    subtitle: families.length + ' 科中英對照，自訂題數，錯題複習',
+    subtitle: function () { refresh(); return families.length + ' 科中英對照，自訂題數，錯題複習'; },
     status: 'ready',
-    render: function (el) { renderSetup(el); },
+    render: function (el) { refresh(); renderSetup(el); },
     summary: function () {
       var s = load(); var t = totals(s);
       return h('span', { class: 'module-meta', text: t.n ? '已作答 ' + t.n + ' 題 · 錯題本 ' + wrongIds(s).length + ' 科' : '尚未作答' });

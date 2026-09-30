@@ -20,3 +20,10 @@
 - `sw.js`：離線快取。改過任何檔案後，把 `VERSION` 加 1；新增模組檔案時也要加進 `FILES`
 - 必須放在 https 網址（例如 GitHub Pages）才能「加到主畫面」並離線使用
 - 換 icon：用新圖重新產生 icons/ 內的 favicon-64.png、icon-192.png、icon-512.png、icon-maskable-512.png（圖案縮在中間 80%，四周補背景色）、apple-touch-icon.png（180×180，不透明），再把 sw.js 的 VERSION 加 1
+
+## 題庫後台（Google 試算表）
+
+- `js/config.js` 的 `sheetUrl` 填入試算表網址（共用設定：知道連結的任何人可檢視）。留空就用內建的 `js/data/families.js`。
+- 工作表「科名」：欄位 `中文科名`、`英文科名1`、`英文科名2`…（至少 4 科）。工作表「植物特徵」：`中文科名` + 特徵欄位，每列一個科。
+- App 每次開啟會讀一次試算表，成功就存在本機；讀不到時用上次存的題庫。首頁有「立即更新」。
+- 讀取方式在 `js/sheet-sync.js`（gviz CSV 端點）。

@@ -25,6 +25,7 @@ window.App = window.App || {};
     if (!root) root = document.getElementById('view');
     root.innerHTML = '';
     window.scrollTo(0, 0);
+    App.currentView = id;
     if (id === 'home') { App.renderHome(root); return; }
     var mod = App.getModule(id);
     if (mod && mod.status === 'ready') mod.render(root, params || {});
@@ -77,10 +78,34 @@ window.App = window.App || {};
     }
   };
 
+  // 題庫同步狀態（只有設定了試算表時才顯示）
+  function bankStatus() {
+    var h = App.h, b = App.bank || {};
+    var text = b.syncing ? '正在從試算表更新題庫…'
+      : b.error ? b.error
+      : b.updatedAt ? '題庫更新於 ' + new Date(b.updatedAt).toLocaleString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+      : '題庫：內建';
+    return h('p', { class: 'bank-status' + (b.error ? ' is-error' : ''), id: 'bank-status' }, [
+      h('span', { text: text }),
+      b.syncing ? null : h('button', { type: 'button', class: 'link-btn', text: '立即更新', onclick: function () { App.syncBank(); } })
+    ]);
+  }
+  // 題庫狀態改變時通知畫面；目前在首頁就更新首頁
+  var bankListeners = [];
+  App.onBank = function (fn) { bankListeners.push(fn); };
+  App.emitBank = function (changed) { bankListeners.forEach(function (fn) { fn(!!changed); }); };
+  App.onBank(function (changed) {
+    if (App.currentView !== 'home') return;
+    if (changed) { App.go('home'); return; }
+    var old = document.getElementById('bank-status');
+    if (old) old.replaceWith(bankStatus());
+  });
+
   App.renderHome = function (el) {
     var h = App.h;
     el.appendChild(h('section', { class: 'home-intro' }, [
-      h('p', { class: 'lede', text: '選一個練習開始。答題記錄會留在這台裝置的瀏覽器裡。' })
+      h('p', { class: 'lede', text: '選一個練習開始。答題記錄會留在這台裝置的瀏覽器裡。' }),
+      App.config && App.config.sheetUrl ? bankStatus() : null
     ]));
     var grid = h('div', { class: 'module-grid' });
     modules.forEach(function (m) {
@@ -92,7 +117,7 @@ window.App = window.App || {};
       }, [
         h('span', { class: 'module-tag', text: ready ? '可以練習' : '即將推出' }),
         h('span', { class: 'module-title', text: m.title }),
-        h('span', { class: 'module-sub', text: m.subtitle }),
+        h('span', { class: 'module-sub', text: typeof m.subtitle === 'function' ? m.subtitle() : m.subtitle }),
         ready && m.summary ? m.summary() : null
       ]);
       grid.appendChild(card);
