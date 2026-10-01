@@ -4,16 +4,22 @@
  * 2. 每次打開 App 在背景抓最新的試算表，成功就存起來並更新畫面
  * 「科名」工作表欄位：中文科名、英文科名1、英文科名2（可再加英文科名3…）
  * 「植物特徵」工作表欄位：中文科名、特徵、備註（一個特徵一列；備註可空白，答題後會顯示）
+ * 「植物個論」工作表：第一欄「中文植物名」是題幹，其他欄（學名、科別、藥用功效1…）都是答案
+ * 「概論通則」工作表：第一欄「名詞」是題幹，其他欄（內容1、內容2…）都是答案
  */
 (function () {
   var CACHE_KEY = 'bank';
   App.data.traits = App.data.traits || {};
+  App.data.plants = App.data.plants || [];
+  App.data.concepts = App.data.concepts || [];
   App.bank = { source: 'builtin', updatedAt: null, error: null, syncing: false };
 
   var cached = App.store.get(CACHE_KEY, null);
   if (cached && cached.families && cached.families.length) {
     App.data.families = cached.families;
     App.data.traits = cached.traits || {};
+    App.data.plants = cached.plants || [];
+    App.data.concepts = cached.concepts || [];
     App.bank.source = 'sheet';
     App.bank.updatedAt = cached.t;
   }
@@ -87,6 +93,26 @@
     return out;
   }
 
+  // 一列一題：第一欄（stemHeader）是題幹，其他有填的格子都是答案；欄名去掉數字當分類（藥用功效1 → 藥用功效）
+  function toEntries(rows, stemHeader) {
+    var header = rows[0] || [];
+    // 工作表名稱打錯時 Google 會回傳第一個工作表，所以要檢查第一欄
+    if (!header.length || header[0].replace(/\s/g, '') !== stemHeader) return [];
+    var seen = {};
+    return rows.slice(1).map(function (r) {
+      var facts = [];
+      header.forEach(function (name, i) {
+        if (i === 0 || !r[i]) return;
+        facts.push({ cat: name.replace(/\d+$/, '').trim(), v: r[i] });
+      });
+      return { stem: r[0] || '', facts: facts };
+    }).filter(function (e) {
+      if (!e.stem || !e.facts.length || seen[e.stem]) return false;
+      seen[e.stem] = true;
+      return true;
+    });
+  }
+
   App.syncBank = function () {
     if (!sheetCsvUrl(App.config.familySheet)) return Promise.resolve(false);
     App.bank.syncing = true;
@@ -94,17 +120,24 @@
     App.emitBank();
     return Promise.all([
       fetchSheet(App.config.familySheet),
-      fetchSheet(App.config.traitSheet).catch(function () { return []; })
+      fetchSheet(App.config.traitSheet).catch(function () { return []; }),
+      fetchSheet(App.config.plantSheet).catch(function () { return []; }),
+      fetchSheet(App.config.conceptSheet).catch(function () { return []; })
     ]).then(function (res) {
       var families = toFamilies(res[0]);
       if (families.length < 4) throw new Error('「' + App.config.familySheet + '」至少要有 4 科才能出題');
       var traits = toTraits(res[1]);
-      var changed = JSON.stringify([families, traits]) !== JSON.stringify([App.data.families, App.data.traits]);
+      var plants = toEntries(res[2], '中文植物名');
+      var concepts = toEntries(res[3], '名詞');
+      var changed = JSON.stringify([families, traits, plants, concepts]) !==
+        JSON.stringify([App.data.families, App.data.traits, App.data.plants, App.data.concepts]);
       App.data.families = families;
       App.data.traits = traits;
+      App.data.plants = plants;
+      App.data.concepts = concepts;
       App.bank.source = 'sheet';
       App.bank.updatedAt = Date.now();
-      App.store.set(CACHE_KEY, { t: App.bank.updatedAt, families: families, traits: traits });
+      App.store.set(CACHE_KEY, { t: App.bank.updatedAt, families: families, traits: traits, plants: plants, concepts: concepts });
       return changed;
     }).catch(function (e) {
       // 連線失敗（沒網路、試算表沒開放檢視）時 fetch 會丟 TypeError

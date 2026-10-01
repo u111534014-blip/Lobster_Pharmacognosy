@@ -205,7 +205,7 @@ button.module-card:hover { border-color: var(--accent); transform: translateY(-1
 .feedback { flex: 1 1 100%; display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; padding: 14px 16px; border-radius: 8px; }
 .feedback.ok { background: var(--ok-bg); color: var(--ok); }
 .feedback.bad { background: var(--bad-bg); color: var(--bad); }
-.feedback .answer { color: var(--ink); font-family: var(--font-latin); font-size: 1.05rem; }
+.feedback .answer { color: var(--ink); font-family: var(--font-latin); font-size: 1.05rem; white-space: pre-line; }
 .feedback .note { font-size: .82rem; margin-left: auto; }
 
 @media (max-width: 560px) {
@@ -245,3 +245,4 @@ button.module-card:hover { border-color: var(--accent); transform: translateY(-1
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
 }
+.sticky-actions .feedback { max-height: 38vh; overflow-y: auto; }

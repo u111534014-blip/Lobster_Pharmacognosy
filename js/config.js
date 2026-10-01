@@ -8,5 +8,7 @@ window.App = window.App || {};
 App.config = {
   sheetUrl: 'https://docs.google.com/spreadsheets/d/1GCEMrZv4sNYJKRrDZHO_4dz9pVDRHjQNY13KgoOWtN4/edit',
   familySheet: '科名',
-  traitSheet: '植物特徵'
+  traitSheet: '植物特徵',
+  plantSheet: '植物個論',
+  conceptSheet: '概論通則'
 };
