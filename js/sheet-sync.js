@@ -113,6 +113,19 @@
     });
   }
 
+  // 分頁名稱可能有不同寫法（例如「概論/通則」），依序試到第一欄對上為止
+  function fetchEntries(names, stemHeader) {
+    var i = 0;
+    function next() {
+      if (i >= names.length) return Promise.resolve([]);
+      return fetchSheet(names[i++]).catch(function () { return []; }).then(function (rows) {
+        var header = rows[0] || [];
+        return header.length && header[0].replace(/\s/g, '') === stemHeader ? toEntries(rows, stemHeader) : next();
+      });
+    }
+    return next();
+  }
+
   App.syncBank = function () {
     if (!sheetCsvUrl(App.config.familySheet)) return Promise.resolve(false);
     App.bank.syncing = true;
@@ -121,14 +134,14 @@
     return Promise.all([
       fetchSheet(App.config.familySheet),
       fetchSheet(App.config.traitSheet).catch(function () { return []; }),
-      fetchSheet(App.config.plantSheet).catch(function () { return []; }),
-      fetchSheet(App.config.conceptSheet).catch(function () { return []; })
+      fetchEntries([App.config.plantSheet, '植物個論', '個論'], '中文植物名'),
+      fetchEntries([App.config.conceptSheet, '概論通則', '概論/通則', '概論、通則', '概論與通則', '概論 通則', '概論'], '名詞')
     ]).then(function (res) {
       var families = toFamilies(res[0]);
       if (families.length < 4) throw new Error('「' + App.config.familySheet + '」至少要有 4 科才能出題');
       var traits = toTraits(res[1]);
-      var plants = toEntries(res[2], '中文植物名');
-      var concepts = toEntries(res[3], '名詞');
+      var plants = res[2];
+      var concepts = res[3];
       var changed = JSON.stringify([families, traits, plants, concepts]) !==
         JSON.stringify([App.data.families, App.data.traits, App.data.plants, App.data.concepts]);
       App.data.families = families;
