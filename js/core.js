@@ -89,6 +89,7 @@ window.App = window.App || {};
       : b.updatedAt ? '題庫更新於 ' + new Date(b.updatedAt).toLocaleString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })
         + '｜科名 ' + App.data.families.length + '・特徵 ' + Object.keys(App.data.traits || {}).length + ' 科'
         + '・植物 ' + (App.data.plants || []).length + '・名詞 ' + (App.data.concepts || []).length
+        + '・花 ' + (App.data.flowers || []).length
       : '題庫：內建';
     return h('p', { class: 'bank-status' + (b.error ? ' is-error' : ''), id: 'bank-status' }, [
       h('span', { text: text }),

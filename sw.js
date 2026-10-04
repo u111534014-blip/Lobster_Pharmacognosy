@@ -2,7 +2,7 @@
  * 離線快取。有網路時一律載入最新檔案，沒網路才用快取。
  * 新增或刪除檔案時，更新 FILES 並把 VERSION 加 1。
  */
-var VERSION = 'v10';
+var VERSION = 'v11';
 var CACHE = 'longxia-yaozhi-' + VERSION;
 var FILES = [
   './',
@@ -17,6 +17,7 @@ var FILES = [
   'js/modules/family-traits.js',
   'js/modules/plants.js',
   'js/modules/concepts.js',
+  'js/modules/flowers.js',
   'js/modules/mixed.js',
   'js/quiz-engine.js',
   'icons/favicon-64.png',

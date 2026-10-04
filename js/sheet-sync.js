@@ -6,12 +6,14 @@
  * 「植物特徵」工作表欄位：中文科名、特徵、備註（一個特徵一列；備註可空白，答題後會顯示）
  * 「植物個論」工作表：第一欄「中文植物名」是題幹，其他欄（學名、科別、藥用功效1…）都是答案
  * 「概論通則」工作表：第一欄「名詞」是題幹，其他欄（內容1、內容2…）都是答案
+ * 「花」工作表：第一欄「名詞」（或「名詞/圖示」）是題幹，其他欄是答案
  */
 (function () {
   var CACHE_KEY = 'bank';
   App.data.traits = App.data.traits || {};
   App.data.plants = App.data.plants || [];
   App.data.concepts = App.data.concepts || [];
+  App.data.flowers = App.data.flowers || [];
   App.bank = { source: 'builtin', updatedAt: null, error: null, syncing: false };
 
   var cached = App.store.get(CACHE_KEY, null);
@@ -20,6 +22,7 @@
     App.data.traits = cached.traits || {};
     App.data.plants = cached.plants || [];
     App.data.concepts = cached.concepts || [];
+    App.data.flowers = cached.flowers || [];
     App.bank.source = 'sheet';
     App.bank.updatedAt = cached.t;
   }
@@ -93,11 +96,16 @@
     return out;
   }
 
+  // 第一欄名稱以題幹欄名開頭就算對上（例如「名詞/圖示」）
+  function stemOk(header, stemHeader) {
+    return !!header.length && header[0].replace(/\s/g, '').indexOf(stemHeader) === 0;
+  }
+
   // 一列一題：第一欄（stemHeader）是題幹，其他有填的格子都是答案；欄名去掉數字當分類（藥用功效1 → 藥用功效）
   function toEntries(rows, stemHeader) {
     var header = rows[0] || [];
     // 工作表名稱打錯時 Google 會回傳第一個工作表，所以要檢查第一欄
-    if (!header.length || header[0].replace(/\s/g, '') !== stemHeader) return [];
+    if (!stemOk(header, stemHeader)) return [];
     var seen = {};
     return rows.slice(1).map(function (r) {
       var facts = [];
@@ -120,7 +128,7 @@
       if (i >= names.length) return Promise.resolve([]);
       return fetchSheet(names[i++]).catch(function () { return []; }).then(function (rows) {
         var header = rows[0] || [];
-        return header.length && header[0].replace(/\s/g, '') === stemHeader ? toEntries(rows, stemHeader) : next();
+        return stemOk(header, stemHeader) ? toEntries(rows, stemHeader) : next();
       });
     }
     return next();
@@ -135,22 +143,25 @@
       fetchSheet(App.config.familySheet),
       fetchSheet(App.config.traitSheet).catch(function () { return []; }),
       fetchEntries([App.config.plantSheet, '植物個論', '個論'], '中文植物名'),
-      fetchEntries([App.config.conceptSheet, '概論通則', '概論/通則', '概論、通則', '概論與通則', '概論 通則', '概論'], '名詞')
+      fetchEntries([App.config.conceptSheet, '概論通則', '概論/通則', '概論、通則', '概論與通則', '概論 通則', '概論'], '名詞'),
+      fetchEntries([App.config.flowerSheet, '花', '植物構造-花', '植物構造－花', '花的構造'], '名詞')
     ]).then(function (res) {
       var families = toFamilies(res[0]);
       if (families.length < 4) throw new Error('「' + App.config.familySheet + '」至少要有 4 科才能出題');
       var traits = toTraits(res[1]);
       var plants = res[2];
       var concepts = res[3];
-      var changed = JSON.stringify([families, traits, plants, concepts]) !==
-        JSON.stringify([App.data.families, App.data.traits, App.data.plants, App.data.concepts]);
+      var flowers = res[4];
+      var changed = JSON.stringify([families, traits, plants, concepts, flowers]) !==
+        JSON.stringify([App.data.families, App.data.traits, App.data.plants, App.data.concepts, App.data.flowers]);
       App.data.families = families;
       App.data.traits = traits;
       App.data.plants = plants;
       App.data.concepts = concepts;
+      App.data.flowers = flowers;
       App.bank.source = 'sheet';
       App.bank.updatedAt = Date.now();
-      App.store.set(CACHE_KEY, { t: App.bank.updatedAt, families: families, traits: traits, plants: plants, concepts: concepts });
+      App.store.set(CACHE_KEY, { t: App.bank.updatedAt, families: families, traits: traits, plants: plants, concepts: concepts, flowers: flowers });
       return changed;
     }).catch(function (e) {
       // 連線失敗（沒網路、試算表沒開放檢視）時 fetch 會丟 TypeError

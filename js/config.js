@@ -10,5 +10,6 @@ App.config = {
   familySheet: '科名',
   traitSheet: '植物特徵',
   plantSheet: '植物個論',
-  conceptSheet: '概論通則'
+  conceptSheet: '概論通則',
+  flowerSheet: '花'
 };
