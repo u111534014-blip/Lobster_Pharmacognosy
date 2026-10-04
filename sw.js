@@ -2,7 +2,7 @@
  * 離線快取。有網路時一律載入最新檔案，沒網路才用快取。
  * 新增或刪除檔案時，更新 FILES 並把 VERSION 加 1。
  */
-var VERSION = 'v11';
+var VERSION = 'v12';
 var CACHE = 'longxia-yaozhi-' + VERSION;
 var FILES = [
   './',

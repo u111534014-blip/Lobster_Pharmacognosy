@@ -43,6 +43,18 @@
       h('span', { class: 'stat-value', text: value })
     ]);
   }
+  // 題目圖片放在 images/ 資料夾，試算表只寫檔名
+  App.imageUrl = function (name) {
+    return (App.config.imageDir || 'images/') + name.split('/').map(encodeURIComponent).join('/');
+  };
+  function imageEl(name) {
+    var img = h('img', { class: 'specimen-img', src: App.imageUrl(name), alt: '題目圖片' });
+    img.addEventListener('error', function () {
+      img.replaceWith(h('p', { class: 'img-missing', text: '找不到圖片「' + name + '」，請確認 GitHub 的 images 資料夾裡有這個檔名（大小寫要一樣）。' }));
+    });
+    return img;
+  }
+
   function fmtTime(t) {
     var d = new Date(t);
     function p(n) { return String(n).padStart(2, '0'); }
@@ -196,7 +208,8 @@
           h('span', { text: q.head }),
           h('span', { text: 'No. ' + String(quiz.index + 1).padStart(2, '0') })
         ]),
-        h('p', { class: 'specimen-name' + (q.stemClass ? ' ' + q.stemClass : ''), text: q.stem }),
+        q.image ? imageEl(q.image) : null,
+        q.stem ? h('p', { class: 'specimen-name' + (q.stemClass ? ' ' + q.stemClass : ''), text: q.stem }) : null,
         q.sub ? h('p', { class: 'specimen-sub latin', text: q.sub }) : null,
         h('p', { class: 'specimen-ask', text: q.ask })
       ]));
@@ -447,14 +460,33 @@
           .map(function (e) { return e.stem; });
       },
       exists: function (id) { return !!byStem[id]; },
-      name: function (id) { return id; },
+      name: function (id) { var e = byStem[id]; return e.stemIsImage ? '（圖）' + e.facts[0].v : id; },
       detail: function (id) { return byStem[id].facts.map(function (f) { return f.v; }).join('、'); },
       make: function (id) {
         var e = byStem[id];
+        var list = e.facts.map(function (f) { return f.v; }).join('、');
+        if (e.stemIsImage) {
+          return {
+            id: id, head: o.head + ' · 圖', image: e.image, multi: true,
+            ask: '選出所有符合這張圖的內容（可複選）', options: App.shuffle(App.factQuestion(e, entries)),
+            answer: o.grouped ? App.factAnswer(e) : list
+          };
+        }
+        // 有附圖的題目，一半機會改成看圖選名詞
+        var named = entries.filter(function (x) { return x !== e && !x.stemIsImage; });
+        if (e.image && named.length >= 3 && Math.random() < 0.5) {
+          return {
+            id: id, head: o.head + ' · 圖', image: e.image, multi: false,
+            ask: '這張圖是哪一個？',
+            options: App.shuffle([{ label: e.stem, correct: true }].concat(
+              App.shuffle(named).slice(0, 3).map(function (x) { return { label: x.stem, correct: false }; }))),
+            answer: e.stem + '：' + list
+          };
+        }
         return {
           id: id, head: o.head, stem: e.stem, stemClass: e.stem.length > 8 ? 'is-trait' : '', multi: true,
           ask: o.ask, options: App.shuffle(App.factQuestion(e, entries)),
-          answer: o.grouped ? e.stem + '\n' + App.factAnswer(e) : e.stem + '：' + e.facts.map(function (f) { return f.v; }).join('、')
+          answer: o.grouped ? e.stem + '\n' + App.factAnswer(e) : e.stem + '：' + list
         };
       }
     });

@@ -102,18 +102,24 @@
   }
 
   // 一列一題：第一欄（stemHeader）是題幹，其他有填的格子都是答案；欄名去掉數字當分類（藥用功效1 → 藥用功效）
+  // 圖片：格子裡寫圖片檔名（例如 花托.jpg，圖放在 GitHub 的 images 資料夾），或放在「圖示」「圖片」欄
+  //   第一欄是圖片 → 看圖選內容；其他欄是圖片 → 這一題有時改成看圖選名詞
+  var IMG = /\.(png|jpe?g|webp|gif|svg)$/i;
   function toEntries(rows, stemHeader) {
     var header = rows[0] || [];
     // 工作表名稱打錯時 Google 會回傳第一個工作表，所以要檢查第一欄
     if (!stemOk(header, stemHeader)) return [];
     var seen = {};
     return rows.slice(1).map(function (r) {
-      var facts = [];
-      header.forEach(function (name, i) {
+      var e = { stem: r[0] || '', facts: [] };
+      if (IMG.test(e.stem)) { e.image = e.stem; e.stemIsImage = true; }
+      r.forEach(function (cell, i) {
+        var name = header[i] || '';
         if (i === 0 || !r[i]) return;
-        facts.push({ cat: name.replace(/\d+$/, '').trim(), v: r[i] });
+        if (IMG.test(r[i]) || /圖示|圖片/.test(name)) { if (!e.image && IMG.test(r[i])) e.image = r[i]; return; }
+        e.facts.push({ cat: name.replace(/\d+$/, '').trim(), v: r[i] });
       });
-      return { stem: r[0] || '', facts: facts };
+      return e;
     }).filter(function (e) {
       if (!e.stem || !e.facts.length || seen[e.stem]) return false;
       seen[e.stem] = true;

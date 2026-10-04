@@ -11,5 +11,6 @@ App.config = {
   traitSheet: '植物特徵',
   plantSheet: '植物個論',
   conceptSheet: '概論通則',
-  flowerSheet: '花'
+  flowerSheet: '花',
+  imageDir: 'images/'   // 題目圖片放在 GitHub 的這個資料夾，試算表寫檔名就好
 };
