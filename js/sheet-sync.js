@@ -6,6 +6,7 @@
  * 「植物特徵」工作表欄位：中文科名、特徵、備註（一個特徵一列；備註可空白，答題後會顯示）
  * 「植物個論」工作表：第一欄「中文植物名」是題幹，其他欄（學名、科別、藥用功效1…）都是答案
  * 「概論通則」工作表：第一欄「名詞」是題幹，其他欄（內容1、內容2…）都是答案
+ * 「圖片」工作表：分組、名詞、圖片（檔名，空白時用「名詞.png」）、說明（可空白）；看圖選名詞，選項只從同一組出
  * 「花」工作表：第一欄「名詞」（或「名詞/圖示」）是題幹，其他欄是答案
  */
 (function () {
@@ -14,6 +15,7 @@
   App.data.plants = App.data.plants || [];
   App.data.concepts = App.data.concepts || [];
   App.data.flowers = App.data.flowers || [];
+  App.data.images = App.data.images || [];
   App.bank = { source: 'builtin', updatedAt: null, error: null, syncing: false };
 
   var cached = App.store.get(CACHE_KEY, null);
@@ -23,6 +25,7 @@
     App.data.plants = cached.plants || [];
     App.data.concepts = cached.concepts || [];
     App.data.flowers = cached.flowers || [];
+    App.data.images = cached.images || [];
     App.bank.source = 'sheet';
     App.bank.updatedAt = cached.t;
   }
@@ -127,6 +130,36 @@
     });
   }
 
+  // 圖片配對：一列一張圖 { group, name, image, note }
+  function toImages(rows) {
+    var header = rows[0] || [];
+    var g = col(header, '分組'), n = col(header, '名詞'), note = col(header, '說明');
+    var img = header.findIndex(function (x) { return /圖片|圖示|檔名/.test(x); });
+    if (g < 0 || n < 0) return [];
+    var seen = {};
+    return rows.slice(1).map(function (r) {
+      var name = r[n] || '', file = img >= 0 ? r[img] || '' : '';
+      if (file && !IMG.test(file)) file += '.png';
+      return { group: r[g] || '', name: name, image: file || (name ? name + '.png' : ''), note: note >= 0 ? r[note] || '' : '' };
+    }).filter(function (x) {
+      var k = x.group + '|' + x.name;
+      if (!x.group || !x.name || seen[k]) return false;
+      seen[k] = true;
+      return true;
+    });
+  }
+  function fetchImages(names) {
+    var i = 0;
+    function next() {
+      if (i >= names.length) return Promise.resolve([]);
+      return fetchSheet(names[i++]).catch(function () { return []; }).then(function (rows) {
+        var list = toImages(rows);
+        return list.length ? list : next();
+      });
+    }
+    return next();
+  }
+
   // 分頁名稱可能有不同寫法（例如「概論/通則」），依序試到第一欄對上為止
   function fetchEntries(names, stemHeader) {
     var i = 0;
@@ -150,7 +183,8 @@
       fetchSheet(App.config.traitSheet).catch(function () { return []; }),
       fetchEntries([App.config.plantSheet, '植物個論', '個論'], '中文植物名'),
       fetchEntries([App.config.conceptSheet, '概論通則', '概論/通則', '概論、通則', '概論與通則', '概論 通則', '概論'], '名詞'),
-      fetchEntries([App.config.flowerSheet, '花', '植物構造-花', '植物構造－花', '花的構造'], '名詞')
+      fetchEntries([App.config.flowerSheet, '花', '植物構造-花', '植物構造－花', '花的構造'], '名詞'),
+      fetchImages([App.config.imageSheet, '圖片', '圖片配對', '圖'])
     ]).then(function (res) {
       var families = toFamilies(res[0]);
       if (families.length < 4) throw new Error('「' + App.config.familySheet + '」至少要有 4 科才能出題');
@@ -158,16 +192,18 @@
       var plants = res[2];
       var concepts = res[3];
       var flowers = res[4];
-      var changed = JSON.stringify([families, traits, plants, concepts, flowers]) !==
-        JSON.stringify([App.data.families, App.data.traits, App.data.plants, App.data.concepts, App.data.flowers]);
+      var images = res[5];
+      var changed = JSON.stringify([families, traits, plants, concepts, flowers, images]) !==
+        JSON.stringify([App.data.families, App.data.traits, App.data.plants, App.data.concepts, App.data.flowers, App.data.images]);
       App.data.families = families;
       App.data.traits = traits;
       App.data.plants = plants;
       App.data.concepts = concepts;
       App.data.flowers = flowers;
+      App.data.images = images;
       App.bank.source = 'sheet';
       App.bank.updatedAt = Date.now();
-      App.store.set(CACHE_KEY, { t: App.bank.updatedAt, families: families, traits: traits, plants: plants, concepts: concepts, flowers: flowers });
+      App.store.set(CACHE_KEY, { t: App.bank.updatedAt, families: families, traits: traits, plants: plants, concepts: concepts, flowers: flowers, images: images });
       return changed;
     }).catch(function (e) {
       // 連線失敗（沒網路、試算表沒開放檢視）時 fetch 會丟 TypeError

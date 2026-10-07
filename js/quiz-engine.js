@@ -124,10 +124,12 @@
         return h('button', { type: 'button', class: 'chip', text: n + ' 題', onclick: function () { countInput.value = n; readCount(); } });
       }));
 
-      var dirGroup = def.dirs ? h('div', { class: 'seg', role: 'radiogroup', 'aria-label': '出題方向' }, def.dirs.map(function (d) {
+      var dirs = typeof def.dirs === 'function' ? def.dirs() : def.dirs;
+      var dirOk = dirs && dirs.some(function (d) { return d.v === settings.dir; });
+      var dirGroup = dirs ? h('div', { class: 'seg', role: 'radiogroup', 'aria-label': def.dirLabel || '出題方向' }, dirs.map(function (d, i) {
         var id = 'dir-' + d.v;
         return h('label', { class: 'seg-item', for: id }, [
-          h('input', { type: 'radio', name: 'dir', id: id, value: d.v, checked: settings.dir === d.v }),
+          h('input', { type: 'radio', name: 'dir', id: id, value: d.v, checked: dirOk ? settings.dir === d.v : i === 0 }),
           h('span', { text: d.label })
         ]);
       })) : null;
@@ -151,7 +153,7 @@
           h('div', { class: 'count-row' }, [countInput, presets]),
           msg
         ]),
-        dirGroup ? h('div', { class: 'field' }, [h('span', { class: 'field-label', text: '出題方向' }), dirGroup]) : null,
+        dirGroup ? h('div', { class: 'field' }, [h('span', { class: 'field-label', text: def.dirLabel || '出題方向' }), dirGroup]) : null,
         def.hint ? h('p', { class: 'hint', text: def.hint }) : null,
         h('div', { class: 'actions' }, [
           h('button', { type: 'button', class: 'btn primary', text: '開始測驗', onclick: function () { start('normal'); } }),
