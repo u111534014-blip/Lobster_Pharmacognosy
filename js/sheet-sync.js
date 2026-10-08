@@ -107,6 +107,7 @@
   // 一列一題：第一欄（stemHeader）是題幹，其他有填的格子都是答案；欄名去掉數字當分類（藥用功效1 → 藥用功效）
   // 圖片：格子裡寫圖片檔名（例如 花托.jpg，圖放在 GitHub 的 images 資料夾），或放在「圖示」「圖片」欄
   //   第一欄是圖片 → 看圖選內容；其他欄是圖片 → 這一題有時改成看圖選名詞
+  // 「分組」欄：同一組的名詞互相當選項，並多出「看內容選名詞」的題目
   var IMG = /\.(png|jpe?g|webp|gif|svg)$/i;
   function toEntries(rows, stemHeader) {
     var header = rows[0] || [];
@@ -119,6 +120,7 @@
       r.forEach(function (cell, i) {
         var name = header[i] || '';
         if (i === 0 || !r[i]) return;
+        if (name.replace(/\s/g, '') === '分組') { e.group = r[i]; return; }
         if (IMG.test(r[i]) || /圖示|圖片/.test(name)) { if (!e.image && IMG.test(r[i])) e.image = r[i]; return; }
         e.facts.push({ cat: name.replace(/\d+$/, '').trim(), v: r[i] });
       });

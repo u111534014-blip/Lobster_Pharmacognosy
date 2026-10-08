@@ -408,15 +408,17 @@
   App.factQuestion = function (entry, allEntries) {
     var mine = {}, myVals = [];
     entry.facts.forEach(function (f) { var k = App.factNorm(f.v); if (!mine[k]) { mine[k] = f.v; myVals.push(k); } });
-    var seen = {}, others = [];
+    // 有分組時，錯的選項優先用同一組的內容
+    var seen = {}, pref = [], rest = [];
     allEntries.forEach(function (e) {
+      var same = entry.group && e.group === entry.group;
       e.facts.forEach(function (f) {
         var k = App.factNorm(f.v);
         if (mine[k] || seen[k]) return;
-        seen[k] = true; others.push(f.v);
+        seen[k] = true; (same ? pref : rest).push(f.v);
       });
     });
-    others = App.shuffle(others);
+    var others = App.shuffle(pref).concat(App.shuffle(rest));
     var k = Math.min(myVals.length, 1 + Math.floor(Math.random() * 4));
     var right = App.shuffle(myVals).slice(0, Math.max(k, 6 - others.length));
     return right.map(function (key) { return { label: mine[key], correct: true }; })
@@ -450,6 +452,23 @@
       entries.forEach(function (e) { byStem[e.stem] = e; });
     }
     refresh();
+    function reverseQuestion(e, list) {
+      var mates = entries.filter(function (x) { return x.group === e.group && !x.stemIsImage; });
+      if (mates.length < 2) return null;
+      var taken = {};
+      mates.forEach(function (x) { if (x !== e) x.facts.forEach(function (f) { taken[App.factNorm(f.v)] = true; }); });
+      // 只拿這一個名詞獨有的內容當題目，不然會有兩個正確答案
+      var own = e.facts.filter(function (f) { return !taken[App.factNorm(f.v)]; });
+      if (!own.length) return null;
+      var f = own[Math.floor(Math.random() * own.length)];
+      var others = App.shuffle(mates.filter(function (x) { return x !== e; })).slice(0, 7);
+      return {
+        id: e.stem, head: o.head + ' · ' + e.group, stem: f.v, stemClass: 'is-trait', multi: false,
+        ask: '這是哪一個？',
+        options: App.shuffle([{ label: e.stem, correct: true }].concat(others.map(function (x) { return { label: x.stem, correct: false }; }))),
+        answer: e.stem + '：' + list
+      };
+    }
     return App.quizModule({
       id: o.id, title: o.title, storeKey: o.storeKey, unit: o.unit,
       prepare: refresh,
@@ -485,6 +504,9 @@
             answer: e.stem + '：' + list
           };
         }
+        // 有分組的題目，一半機會改成看內容選名詞，選項只從同一組出
+        var rev = e.group && Math.random() < 0.5 && reverseQuestion(e, list);
+        if (rev) return rev;
         return {
           id: id, head: o.head, stem: e.stem, stemClass: e.stem.length > 8 ? 'is-trait' : '', multi: true,
           ask: o.ask, options: App.shuffle(App.factQuestion(e, entries)),
