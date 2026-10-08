@@ -6,7 +6,7 @@
  * 「植物特徵」工作表欄位：中文科名、特徵、備註（一個特徵一列；備註可空白，答題後會顯示）
  * 「植物個論」工作表：第一欄「中文植物名」是題幹，其他欄（學名、科別、藥用功效1…）都是答案
  * 「概論通則」工作表：第一欄「名詞」是題幹，其他欄（內容1、內容2…）都是答案
- * 「圖片」工作表：分組、名詞、圖片（檔名，空白時用「名詞.png」）、說明（可空白）；看圖選名詞，選項只從同一組出
+ * 「圖片」工作表：分組、名詞、圖片（檔名，空白時用「名詞.png」；可再加「圖片2」…）、說明（可空白）；看圖選名詞，選項只從同一組出
  * 「花」工作表：第一欄「名詞」（或「名詞/圖示」）是題幹，其他欄是答案
  */
 (function () {
@@ -130,23 +130,29 @@
     });
   }
 
-  // 圖片配對：一列一張圖 { group, name, image, note }
+  // 圖片配對：一張圖一筆 { group, name, image, note }
+  // 同一個名詞有好幾張圖時，可以多加「圖片2」「圖片3」欄，或另外寫一列同樣的名詞
   function toImages(rows) {
     var header = rows[0] || [];
     var g = col(header, '分組'), n = col(header, '名詞'), note = col(header, '說明');
-    var img = header.findIndex(function (x) { return /圖片|圖示|檔名/.test(x); });
+    var imgCols = header.map(function (x, i) { return /圖片|圖示|檔名/.test(x) ? i : -1; })
+      .filter(function (i) { return i >= 0; });
     if (g < 0 || n < 0) return [];
-    var seen = {};
-    return rows.slice(1).map(function (r) {
-      var name = r[n] || '', file = img >= 0 ? r[img] || '' : '';
-      if (file && !IMG.test(file)) file += '.png';
-      return { group: r[g] || '', name: name, image: file || (name ? name + '.png' : ''), note: note >= 0 ? r[note] || '' : '' };
-    }).filter(function (x) {
-      var k = x.group + '|' + x.name;
-      if (!x.group || !x.name || seen[k]) return false;
-      seen[k] = true;
-      return true;
+    var seen = {}, out = [];
+    rows.slice(1).forEach(function (r) {
+      var group = r[g] || '', name = r[n] || '';
+      if (!group || !name) return;
+      var files = imgCols.map(function (i) { return r[i] || ''; }).filter(Boolean)
+        .map(function (f) { return IMG.test(f) ? f : f + '.png'; });
+      if (!files.length) files = [name + '.png'];
+      files.forEach(function (file) {
+        var k = group + '|' + file;
+        if (seen[k]) return;
+        seen[k] = true;
+        out.push({ group: group, name: name, image: file, note: note >= 0 ? r[note] || '' : '' });
+      });
     });
+    return out;
   }
   function fetchImages(names) {
     var i = 0;
