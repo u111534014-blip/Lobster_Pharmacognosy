@@ -6,7 +6,9 @@
  * 「植物特徵」工作表欄位：中文科名、特徵、備註（一個特徵一列；備註可空白，答題後會顯示）
  * 「植物個論」工作表：第一欄「中文植物名」是題幹，其他欄（學名、科別、藥用功效1…）都是答案
  * 「概論通則」工作表：第一欄「名詞」是題幹，其他欄（內容1、內容2…）都是答案
- * 「圖片」工作表：分組、名詞、圖片（檔名，空白時用「名詞.png」；可再加「圖片2」…）、說明（可空白）；看圖選名詞，選項只從同一組出
+ * 「圖片」工作表：分組、名詞、圖片（檔名，空白時用「名詞.png」；可再加「圖片2」…）、標號（可空白）、說明（可空白）；看圖選名詞，選項只從同一組出
+ *   標號：同一張圖標了 ①②③ 時，每個標號寫一列，題目會問「圖中 ② 是什麼？」
+ * 「果實」工作表：同「花」
  * 「花」工作表：第一欄「名詞」（或「名詞/圖示」）是題幹，其他欄是答案
  */
 (function () {
@@ -15,6 +17,7 @@
   App.data.plants = App.data.plants || [];
   App.data.concepts = App.data.concepts || [];
   App.data.flowers = App.data.flowers || [];
+  App.data.fruits = App.data.fruits || [];
   App.data.images = App.data.images || [];
   App.bank = { source: 'builtin', updatedAt: null, error: null, syncing: false };
 
@@ -25,6 +28,7 @@
     App.data.plants = cached.plants || [];
     App.data.concepts = cached.concepts || [];
     App.data.flowers = cached.flowers || [];
+    App.data.fruits = cached.fruits || [];
     App.data.images = cached.images || [];
     App.bank.source = 'sheet';
     App.bank.updatedAt = cached.t;
@@ -137,21 +141,22 @@
   function toImages(rows) {
     var header = rows[0] || [];
     var g = col(header, '分組'), n = col(header, '名詞'), note = col(header, '說明');
+    var mk = col(header, '標號'); if (mk < 0) mk = col(header, '編號');
     var imgCols = header.map(function (x, i) { return /圖片|圖示|檔名/.test(x) ? i : -1; })
       .filter(function (i) { return i >= 0; });
     if (g < 0 || n < 0) return [];
     var seen = {}, out = [];
     rows.slice(1).forEach(function (r) {
-      var group = r[g] || '', name = r[n] || '';
+      var group = r[g] || '', name = r[n] || '', mark = mk >= 0 ? r[mk] || '' : '';
       if (!group || !name) return;
       var files = imgCols.map(function (i) { return r[i] || ''; }).filter(Boolean)
         .map(function (f) { return IMG.test(f) ? f : f + '.png'; });
       if (!files.length) files = [name + '.png'];
       files.forEach(function (file) {
-        var k = group + '|' + file;
+        var k = group + '|' + file + (mark ? '|' + mark : '');
         if (seen[k]) return;
         seen[k] = true;
-        out.push({ group: group, name: name, image: file, note: note >= 0 ? r[note] || '' : '' });
+        out.push({ group: group, name: name, image: file, mark: mark, note: note >= 0 ? r[note] || '' : '' });
       });
     });
     return out;
@@ -192,7 +197,8 @@
       fetchEntries([App.config.plantSheet, '植物個論', '個論'], '中文植物名'),
       fetchEntries([App.config.conceptSheet, '概論通則', '概論/通則', '概論、通則', '概論與通則', '概論 通則', '概論'], '名詞'),
       fetchEntries([App.config.flowerSheet, '花', '植物構造-花', '植物構造－花', '花的構造'], '名詞'),
-      fetchImages([App.config.imageSheet, '圖片', '圖片配對', '圖'])
+      fetchImages([App.config.imageSheet, '圖片', '圖片配對', '圖']),
+      fetchEntries([App.config.fruitSheet, '果實', '植物構造-果實', '植物構造－果實', '果實構造'], '名詞')
     ]).then(function (res) {
       var families = toFamilies(res[0]);
       if (families.length < 4) throw new Error('「' + App.config.familySheet + '」至少要有 4 科才能出題');
@@ -201,17 +207,19 @@
       var concepts = res[3];
       var flowers = res[4];
       var images = res[5];
-      var changed = JSON.stringify([families, traits, plants, concepts, flowers, images]) !==
-        JSON.stringify([App.data.families, App.data.traits, App.data.plants, App.data.concepts, App.data.flowers, App.data.images]);
+      var fruits = res[6];
+      var changed = JSON.stringify([families, traits, plants, concepts, flowers, images, fruits]) !==
+        JSON.stringify([App.data.families, App.data.traits, App.data.plants, App.data.concepts, App.data.flowers, App.data.images, App.data.fruits]);
       App.data.families = families;
       App.data.traits = traits;
       App.data.plants = plants;
       App.data.concepts = concepts;
       App.data.flowers = flowers;
       App.data.images = images;
+      App.data.fruits = fruits;
       App.bank.source = 'sheet';
       App.bank.updatedAt = Date.now();
-      App.store.set(CACHE_KEY, { t: App.bank.updatedAt, families: families, traits: traits, plants: plants, concepts: concepts, flowers: flowers, images: images });
+      App.store.set(CACHE_KEY, { t: App.bank.updatedAt, families: families, traits: traits, plants: plants, concepts: concepts, flowers: flowers, images: images, fruits: fruits });
       return changed;
     }).catch(function (e) {
       // 連線失敗（沒網路、試算表沒開放檢視）時 fetch 會丟 TypeError

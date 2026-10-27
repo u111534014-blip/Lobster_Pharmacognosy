@@ -2,7 +2,8 @@
  * 功能模組：圖片配對
  * 「圖片」工作表：分組、名詞、圖片（可再加圖片2…）、說明。每張圖各出一題。題目顯示圖片，選出它是哪一個名詞；
  * 選項只從同一個分組裡出（例如花藥的六種型態），一組最多顯示 8 個選項。
- * 圖片檔放在 GitHub 的 images 資料夾。記錄存在 App.store 的 'imageQuiz'，題目 id：'分組|圖片檔名'
+ * 圖片檔放在 GitHub 的 images 資料夾。記錄存在 App.store 的 'imageQuiz'，題目 id：'分組|圖片檔名'（有標號時再加 '|標號'）
+ * 有「標號」時，同一張圖可以出好幾題：「圖中 ② 是什麼？」
  */
 (function () {
   var items = [], byId = {}, groups = {}, order = [];
@@ -15,7 +16,7 @@
     // 一組至少要有 2 個不同的名詞才能出題
     order = order.filter(function (g) { return names(g).length >= 2; });
     order.forEach(function (g) {
-      groups[g].forEach(function (x) { var id = g + '|' + x.image; items.push(id); byId[id] = x; });
+      groups[g].forEach(function (x) { var id = g + '|' + x.image + (x.mark ? '|' + x.mark : ''); items.push(id); byId[id] = x; });
     });
   }
   function names(g) {
@@ -47,14 +48,15 @@
       return items.slice();
     },
     exists: function (id) { return !!byId[id]; },
-    name: function (id) { return byId[id].name; },
+    name: function (id) { var x = byId[id]; return x.mark ? x.name + '（' + x.mark + '）' : x.name; },
     detail: function (id) { return byId[id].group; },
     make: function (id) {
       var x = byId[id];
       var others = App.shuffle(names(x.group).filter(function (n) { return n !== x.name; })).slice(0, 7);
       return {
         id: id, head: x.group, image: x.image, multi: false,
-        ask: '這張圖是哪一個？',
+        stem: x.mark ? '圖中 ' + x.mark + ' 是什麼？' : '', stemClass: 'is-trait',
+        ask: x.mark ? '選出這個標號對應的名稱' : '這張圖是哪一個？',
         options: App.shuffle([{ label: x.name, correct: true }].concat(others.map(function (n) { return { label: n, correct: false }; }))),
         answer: x.name + (x.note ? '：' + x.note : ''),
         notes: []
